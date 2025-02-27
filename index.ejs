@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Team Selection</title>
+    <style>
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 150vh;
+            margin: 0;
+           
+          
+           
+          
+            
+        }
+        .head {
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-team {
+            display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 2px solid black;
+    padding: 20px;
+    width: 30%;
+    border-radius: 8px;
+    box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.2);
+   
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+            
+        }
+        input[type="text"] {
+            width: 40%;
+            padding: 4px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-left: 10%;
+        }
+        .radio-group {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .radio-group label {
+            margin-right: 2px;
+        }
+        button {
+            margin-top: 15px;
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        table{
+            margin-top: 5%;
+        }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+</head>
+<body>
+    <header class="head">
+        <h1>Choose Your 11's for IPL 2026</h1>
+    </header>
+
+    <form class="form-team" id="teamForm" action="/add" method="post">
+       
+        <label style="margin-right: 15%;">Enter Your player Name</label>
+        <input type="text" name="name" id="name">
+
+       
+
+        <label style="margin-right: 22%;">Enter the Position</label>
+        <input type="text" name="position" id="position">
+
+        <label>Select Role</label>
+        <div class="radio-group">
+            <input type="radio" name="role" value="Bat" id="bat"><label for="bat">Bat</label>
+            <input type="radio" name="role" value="Bowl" id="bowl"><label for="bowl">Bowl</label>
+            <input type="radio" name="role" value="All-rounder" id="allRounder"><label for="allRounder">All-Rounder</label>
+            <input type="radio" name="role" value="Wicket Keeper" id="wk"><label for="wk">Wicket Keeper</label>
+        </div>
+
+        <button id="btn" onclick="nameoftheteam(event)">Add</button>
+    </form>
+   
+    <table class="table table-success table-striped">
+       
+        <thead>
+            <th>Position</td>
+            <th>Player Name</td>
+            <th>Role</td>
+            <th>Action</th>
+        
+
+        </thead>
+        <tbody>
+           <% players.forEach((player)=>{ %>
+            <tr id="<%= player._id %>">
+                <td><%= player.position %></td>
+                <td><%= player.name %></td>
+                <td><%= player.role %></td>
+                <td><%= player.wk %></td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-danger" onclick="deleteplayer('<%= player._id %>')">Delete</button>
+                        <button type="button" class="btn btn-warning" onclick="updatePlayer('<%= player._id %>')">Update</button>
+
+                    </div>
+                </td>
+
+            </tr>
+            
+
+        <%})%>
+        </tbody>
+    </table>
+    <script>
+        async function deleteplayer(id){
+            if(confirm("Are you sure?")){
+                const res=await fetch(`/delete/${id}`,{method : 'DELETE'})
+                if(res.ok){
+                    document.getElementById(`${id}`).remove();
+        
+                }
+                else{
+                    alert("failed to delete data");
+                }
+            }
+        }
+        async function updatePlayer(id) {
+    // Fetch the player's current data from the row
+    let row = document.getElementById(id);
+    let position = row.children[0].innerText;
+    let name = row.children[1].innerText;
+    let role = row.children[2].innerText;
+    let wk = row.children[3].innerText;
+
+    // Set the existing data in the form fields
+    document.getElementById("name").value = name;
+    document.getElementById("position").value = position;
+    document.getElementById("wk").value = wk;
+
+    document.querySelector(`input[name="role"][value="${role}"]`).checked = true;
+
+    // Change the button to "Save Changes"
+    let btn = document.getElementById("btn");
+    btn.innerText = "Save Changes";
+    btn.onclick = async function (event) {
+        event.preventDefault(); // Prevent form submission
+        let updatedName = document.getElementById("name").value;
+        let updatedPosition = document.getElementById("position").value;
+        let updatedRole = document.querySelector('input[name="role"]:checked').value;
+
+        // Send the update request to the server
+        const res = await fetch(`/update/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: updatedName, position: updatedPosition, role: updatedRole })
+        });
+
+        if (res.ok) {
+            // Update the table row dynamically
+            row.children[0].innerText = updatedPosition;
+            row.children[1].innerText = updatedName;
+            row.children[2].innerText = updatedRole;
+
+            // Reset the form
+            document.getElementById("teamForm").reset();
+            btn.innerText = "Add";
+            btn.onclick = nameoftheteam;
+        } else {
+            alert("Failed to update data");
+        }
+    };
+}
+
+        
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+</body>
+</html>
